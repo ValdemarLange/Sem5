@@ -22,7 +22,7 @@ def read_map(file):
 
 def make_map(height, width):
     map_image = np.ones((height, width, 3), dtype=np.uint8) * 255
-    num_obstacles = 5
+    num_obstacles = 10
     obstacle_size = 40  # Size of each square obstacle
     for _ in range(num_obstacles):
         # Generate random coordinates for the obstacle
@@ -60,8 +60,8 @@ def place_obstacle_pixel(map, x, y):
 
 # How to use:
 # Read the map
-#map_file = 'prg_ex2_map.png'
-#map_image = read_map(map_file)
+# map_file = 'prg_ex2_map.png'
+# map_image = read_map(map_file)
 
 # make your own map
 #random_map = make_map(200, 200)
@@ -74,6 +74,15 @@ def place_obstacle_pixel(map, x, y):
 # else:
 #     print(f"Pixel at ({x}, {y}) is white (free space)")
 
+def add_edges(map, maxx, maxy):
+    for i in range(maxx-2):
+        map[0][i+1] = (0,0,0)
+        map[maxy-1][i+1] = (0,0,0)
+
+    for j in range(maxy-2):
+        map[j+1][0] = (0,0,0)
+        map[j+1][maxx-1] = (0,0,0) 
+
 def brushfire(map, maxx, maxy):
 
     queue = []
@@ -81,20 +90,34 @@ def brushfire(map, maxx, maxy):
 
     # Initialize matrix with 0s (no obstacles)
     matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
+    region_matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
+
+    obstacle_index = 1
+    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
 
     # Loop through a specific region and update the matrix
     for i in range(maxx):
         for j in range(maxy):
             if is_pixel_an_obstacle(map, i, j):
                 matrix[i][j] = 1  # Mark as obstacle
+
+                obstacle_neighbor = False
+
+                for neighborx, neighbory in directions:
+                    neighx, neighy = i + neighborx, j + neighbory
+
+                    if 0 <= neighx < maxx and 0 <= neighy < maxy:
+                        if matrix[neighx][neighy] > 0:  # Already labeled as obstacle
+                            obstacle_neighbor = True
+                            region_matrix[i][j] = region_matrix[neighx][neighy]  # Assign same obstacle label
+                            break
+
+                if not obstacle_neighbor:
+                    region_matrix[i][j] = obstacle_index
+                    obstacle_index += 1
+                    
                 queue.append((i,j))
-
-    # pixel test
-    matrix[1][10] = 1
-    queue.append((1,10))
-
-    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
-
+    
     while queue:
         current_pixel = queue.pop(0)
         current_x, current_y = current_pixel
@@ -107,40 +130,140 @@ def brushfire(map, maxx, maxy):
 
                 if matrix[neix][neiy] == 0:
                     matrix[neix][neiy] = matrix[current_x][current_y] + 1
+                    region_matrix[neix][neiy] = region_matrix[current_x][current_y]
                     queue.append((neix,neiy))
     
-    return matrix
+    return matrix, region_matrix
+
+def unify_regions(matrix, region_matrix, maxx, maxy):
+    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Op, ned, højre, venstre
+
+    for i in range(maxx):
+        for j in range(maxy):
+            if matrix[i][j] == 1:  # Dette er en obstacle pixel
+                current_region = region_matrix[i][j]
+                
+                # Tjek naboer
+                for neighborx, neighbory in directions:
+                    neighx, neighy = i + neighborx, j + neighbory
+                    
+                    if 0 <= neighx < maxx and 0 <= neighy < maxy:
+                        if matrix[neighx][neighy] == 1:  # Hvis naboen også er en obstacle
+                            neighbor_region = region_matrix[neighx][neighy]
+                            
+                            # Hvis naboen har en anden region, foren regionerne
+                            if current_region != neighbor_region:
+                                # Funktion som går igennem matricen og ændrer region_matrix, så det matcher
+                                merge_regions(region_matrix, current_region, neighbor_region, maxx, maxy)
+
+def merge_regions(region_matrix, region1, region2, maxx, maxy):
+    # Gennemløb hele matrixen og ændr alle pixels med region2 til region1
+    for i in range(maxx):
+        for j in range(maxy):
+            if region_matrix[i][j] == region2:
+                region_matrix[i][j] = region1
 
 # Function to visualize the matrix with colors based on distance
 def visualize_matrix(matrix, maxx, maxy):
-    # Get the maximum value in the matrix (for normalization)
-    max_value = np.max(matrix)
-    
-    # Create an empty image with 3 color channels (RGB)
     color_map = np.zeros((maxx, maxy, 3), dtype=np.uint8)
     
-    # Normalize the matrix values to the range [0, 255] and map them to colors
     for i in range(maxx):
         for j in range(maxy):
-            # Normalize the matrix value to a grayscale intensity (0-255)
-            if matrix[i][j] == 1:
-                color_map[i, j] = (0, 0, 0)  # Obstacles are black
+            if matrix[i][j] == 1: # Obstacles skal være sort
+                color_map[i, j] = (0, 0, 0)  
             else:
-                intensity = int((matrix[i][j] / max_value) * 255)
-                color_map[i, j] = (255 - intensity, 255 - intensity, 255)  # White to black gradient
+                distance = min(matrix[i][j]*3, 200) 
+                color_map[i, j] = (200 - distance, 200 - distance, 255)  # Hvid til rød efter afstand til obstacle
     
     # Return the color map image
     return color_map
 
-my_map = make_map(300,300)
+def visualize_region_matrix(region_matrix, maxx, maxy):
+    color_map = np.zeros((maxx, maxy, 3), dtype=np.uint8)
+    farver = [
+    # # Pastel:
+    (150, 200, 150),
+    (150, 180, 255),
+    (255, 255, 150),
+    (255, 150, 255),
+    (150, 255, 255),
+    (255, 180, 200),
+    (180, 150, 255),
+    (180, 220, 255),
+    (255, 200, 150),
+    (200, 255, 180),
+    (255, 160, 160),
+    (180, 255, 200),
+    (220, 190, 255),
+    # # Kamo
+    # (107, 142, 35),
+    # (85, 107, 47),
+    # (210, 180, 140),
+    # (244, 164, 96),
+    # (34, 139, 34),
+    # (139, 69, 19),
+    # (240, 230, 140),
+    # (189, 183, 107),
+    # (85, 107, 47),
+    # (75, 83, 32)
+]
+    
+    for i in range(maxx):
+        for j in range(maxy):
+            if matrix[i][j] == 1: # Obstacles skal være sort
+                color_map[i, j] = (0, 0, 0)  
+            else:
+                region = region_matrix[i][j] 
+                color_map[i, j] = farver[region % len(farver)]
 
-matrix = brushfire(my_map, 300, 300)
+    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
+
+
+    for i in range(maxx):
+        for j in range(maxy):
+            for stepx,stepy in directions:
+                x, y = i+stepx, j+stepy
+                if 0 <= x < maxx and 0 <= y < maxy and region_matrix[x][y] != region_matrix[i][j]:
+                    color_map[i][j] = (255,255,255)
+
+    # Return the color map image
+    return color_map
+
+sizex = 500
+sizey = 500
+
+my_map = make_map(500,500)
+
+
+add_edges(my_map, sizex, sizey)
+
+matrix, region_matrix = brushfire(my_map, sizex, sizey)
+
+#add_edges(matrix, region_matrix, 300, 300)
+unify_regions(matrix, region_matrix, sizex, sizey)
 
 # Visualize the matrix
-visualized_map = visualize_matrix(matrix, 300, 300)
+visualized_map = visualize_matrix(matrix, sizex, sizey)
+region_map = visualize_region_matrix(region_matrix, sizex, sizey)
 
-# Display the visualized map
-cv2.imshow('Brushfire Visualization', visualized_map)
+# Resize the image for visualization (increase scale by 2x)
+scale_factor = 3
+resized_brushfire_map = cv2.resize(visualized_map, (visualized_map.shape[1] * scale_factor, visualized_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
+resized_region_map = cv2.resize(region_map, (region_map.shape[1] * scale_factor, region_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
+
+
+# Create a named window
+cv2.namedWindow('Brushfire map', cv2.WINDOW_NORMAL)
+# Optionally, resize the window
+cv2.resizeWindow('Brushfire map', 950, 950)  # Or use the dimensions you want
+# Show the resized image
+cv2.imshow('Brushfire map', resized_brushfire_map)
+
+cv2.namedWindow('Region / GVD', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Region / GVD', 950, 950)  # Or use the dimensions you want
+cv2.imshow('Region / GVD', resized_region_map)
+cv2.waitKey(0)  # Wait until a key is pressed
+cv2.destroyAllWindows()
 
 
 # Mark a pixel on the map
