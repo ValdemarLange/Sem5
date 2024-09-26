@@ -172,40 +172,40 @@ def visualize_matrix(matrix, maxx, maxy):
             if matrix[i][j] == 1: # Obstacles skal være sort
                 color_map[i, j] = (0, 0, 0)  
             else:
-                distance = min(matrix[i][j]*3, 200) 
+                distance = min(matrix[i][j]*1.5, 200) 
                 color_map[i, j] = (200 - distance, 200 - distance, 255)  # Hvid til rød efter afstand til obstacle
     
     # Return the color map image
     return color_map
 
-def visualize_region_matrix(region_matrix, maxx, maxy):
+def visualize_region_matrix(region_matrix, maxx, maxy, voronoi_lines):
     color_map = np.zeros((maxx, maxy, 3), dtype=np.uint8)
     farver = [
     # # Pastel:
-    (150, 200, 150),
-    (150, 180, 255),
-    (255, 255, 150),
-    (255, 150, 255),
-    (150, 255, 255),
-    (255, 180, 200),
-    (180, 150, 255),
-    (180, 220, 255),
-    (255, 200, 150),
-    (200, 255, 180),
-    (255, 160, 160),
-    (180, 255, 200),
-    (220, 190, 255),
+    # (150, 200, 150),
+    # (150, 180, 255),
+    # (255, 255, 150),
+    # (255, 150, 255),
+    # (150, 255, 255),
+    # (255, 180, 200),
+    # (180, 150, 255),
+    # (180, 220, 255),
+    # (255, 200, 150),
+    # (200, 255, 180),
+    # (255, 160, 160),
+    # (180, 255, 200),
+    # (220, 190, 255),
     # # Kamo
-    # (107, 142, 35),
-    # (85, 107, 47),
-    # (210, 180, 140),
-    # (244, 164, 96),
-    # (34, 139, 34),
-    # (139, 69, 19),
-    # (240, 230, 140),
-    # (189, 183, 107),
-    # (85, 107, 47),
-    # (75, 83, 32)
+    (107, 142, 35),
+    (85, 107, 47),
+    (210, 180, 140),
+    (244, 164, 96),
+    (34, 139, 34),
+    (139, 69, 19),
+    (240, 230, 140),
+    (189, 183, 107),
+    (85, 107, 47),
+    (75, 83, 32)
 ]
     
     for i in range(maxx):
@@ -224,10 +224,96 @@ def visualize_region_matrix(region_matrix, maxx, maxy):
             for stepx,stepy in directions:
                 x, y = i+stepx, j+stepy
                 if 0 <= x < maxx and 0 <= y < maxy and region_matrix[x][y] != region_matrix[i][j]:
-                    color_map[i][j] = (255,255,255)
+                    color_map[i][j] = (20,20,20)
+                    voronoi_lines[i][j] = 1
 
     # Return the color map image
     return color_map
+
+def find_near_vor(voronoi_lines, startx, starty, endx, endy, maxx, maxy):
+    vor_x_s = 0
+    vor_y_s = 0
+    lowest_dist_s = maxx*maxy
+    vor_x_e = 0
+    vor_y_e = 0
+    lowest_dist_e = maxx*maxy    
+
+    for i in range(maxx):
+        for j in range(maxy):
+            if voronoi_lines[i, j, 0] == 1:
+                dist = np.sqrt((j-startx) ** 2 + (i-starty) ** 2)
+                dist_e = np.sqrt((j-endx) ** 2 + (i-endy) ** 2)
+                if dist < lowest_dist_s:
+                    vor_x_s = j 
+                    vor_y_s = i
+                    lowest_dist_s = dist
+                if dist_e < lowest_dist_e:
+                    vor_x_e = j
+                    vor_y_e = i
+                    lowest_dist_e = dist_e
+    #print(vor_x_s, vor_y_s, vor_x_e, vor_y_e) 
+    return vor_x_s, vor_y_s, vor_x_e, vor_y_e
+                
+def path_planner(voronoi_lines, startx, starty, endx, endy, maxx, maxy, map):
+    ypath_s, xpath_s, ypath_e, xpath_e = find_near_vor(voronoi_lines, startx, starty, endx, endy, maxx, maxy) # path_s = path start punkt og path_e = path end punkt
+    queue = []
+    cell_visited = [[None for _ in range(maxx)] for _ in range(maxy)]
+    directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]  # Op, ned, højre, venstre
+
+
+    queue.append((xpath_s, ypath_s))
+    cell_visited[xpath_s][ypath_s] = (xpath_s, ypath_s) # Start forældre
+
+    while queue:
+        current_x, current_y = queue.pop(0)
+
+        # map[current_x][current_y] = (0, 255, 0)  # Grøn farve på udforskede celler :)
+
+
+        if (current_x, current_y) == (xpath_e, ypath_e):
+            print("route found")
+            map1 = visualize_straigth(startx, starty, xpath_s, ypath_s, endx, endy, xpath_e, ypath_e, map)
+
+            map_out = visualize_path(cell_visited, xpath_s, ypath_s, xpath_e, ypath_e, map1)
+            return map_out
+       
+        for stepx,stepy in directions: # nei = neighbor x/y
+            neix = current_x + stepx
+            neiy = current_y + stepy
+            #print(neix, neiy)
+
+            if 0 <= neix < maxx and 0 <= neiy < maxy:
+                if voronoi_lines[neix, neiy, 0] == 1 and cell_visited[neix][neiy] is None:
+                    queue.append((neix,neiy))
+                    cell_visited[neix][neiy] = (current_x, current_y)
+                    
+    print("no path")
+    
+    map_out = visualize_path(cell_visited, xpath_s,ypath_s, xpath_e, ypath_e, map)
+    return map_out
+
+def visualize_straigth(startx,starty,xpath_s,ypath_s, endx, endy, xpath_e, ypath_e, map):
+    for x in range(startx, xpath_s + 1):
+        map[starty][x] = (0,0,255)
+    for y in range(starty, ypath_s +1):
+        map[y][startx] = (0,0,255)
+
+    return map
+
+
+def visualize_path(cell_visited, startx, starty, endx, endy, map):
+    current = (endx, endy)
+
+    if cell_visited[endx][endy] is None:
+        print("Cannot reconstruct path, no valid path found.")
+        return map
+
+    while current != (startx, starty):
+        map[current[0]][current[1]] = (0,0,255)
+        current = cell_visited[current[0]][current[1]]
+
+    return map
+    # Tegn startpunkt også
 
 sizex = 500
 sizey = 500
@@ -244,10 +330,16 @@ unify_regions(matrix, region_matrix, sizex, sizey)
 
 # Visualize the matrix
 visualized_map = visualize_matrix(matrix, sizex, sizey)
-region_map = visualize_region_matrix(region_matrix, sizex, sizey)
+
+voronoi_lines = np.zeros((sizex, sizey, 3), dtype=np.uint8)
+
+
+region_map = visualize_region_matrix(region_matrix, sizex, sizey, voronoi_lines)
+
+#find_near_vor(voronoi_lines, 100, 100, 300, 300,sizex, sizey)
 
 # Resize the image for visualization (increase scale by 2x)
-scale_factor = 3
+scale_factor = 1
 resized_brushfire_map = cv2.resize(visualized_map, (visualized_map.shape[1] * scale_factor, visualized_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
 resized_region_map = cv2.resize(region_map, (region_map.shape[1] * scale_factor, region_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
 
@@ -263,6 +355,11 @@ cv2.namedWindow('Region / GVD', cv2.WINDOW_NORMAL)
 cv2.resizeWindow('Region / GVD', 950, 950)  # Or use the dimensions you want
 cv2.imshow('Region / GVD', resized_region_map)
 cv2.waitKey(0)  # Wait until a key is pressed
+
+path_map = path_planner(voronoi_lines, 100, 100, 400, 200, sizex, sizey, region_map)
+cv2.imshow('Path', path_map)
+cv2.waitKey(0)
+
 cv2.destroyAllWindows()
 
 
