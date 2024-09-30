@@ -39,7 +39,7 @@ def make_map(height, width):
 
 def is_pixel_an_obstacle(map, x, y):
     # Get the pixel color at coordinates (x, y)
-    pixel_color = map[x, y]
+    pixel_color = map[y, x]
     # returns true if the pixel is black or close to black
     return np.all(pixel_color < 20)
 
@@ -66,61 +66,57 @@ def place_obstacle_pixel(map, x, y):
 # make your own map
 #random_map = make_map(200, 200)
 
-
-# Obstacle checking
-# x, y = 100, 100  # Replace with your coordinates
-# if is_pixel_an_obstacle(random_map, x, y):
-#     print(f"Pixel at ({x}, {y}) is black (obstacle)")
-# else:
-#     print(f"Pixel at ({x}, {y}) is white (free space)")
-
 def add_edges(map, maxx, maxy):
-    for i in range(maxx-2):
-        map[0][i+1] = (0,0,0)
-        map[maxy-1][i+1] = (0,0,0)
+    for i in range(maxx-1): # bredden
+        map[0][i] = (0,0,0) #ØVERST ?
+        map[maxy-1][i] = (0,0,0)
 
-    for j in range(maxy-2):
-        map[j+1][0] = (0,0,0)
-        map[j+1][maxx-1] = (0,0,0) 
+    for j in range(maxy-1): # Højden
+        map[j][0] = (0,0,0) # Venstre ?
+        map[j][maxx-1] = (0,0,0) #Højre ?
+
+    map[0][0] = (255,255,255)       # FJERN HJØRNER
+    map[0][maxx-1] = (255,255,255)
+    map[maxy-1][0] = (255,255,255)
+    map[maxy-1][maxx-1] = (255,255,255)
+    
 
 def brushfire(map, maxx, maxy):
 
     queue = []
 
-
-    # Initialize matrix with 0s (no obstacles)
+    
     matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
     region_matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
 
     obstacle_index = 1
     directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
 
-    # Loop through a specific region and update the matrix
-    for i in range(maxx):
-        for j in range(maxy):
-            if is_pixel_an_obstacle(map, i, j):
-                matrix[i][j] = 1  # Mark as obstacle
+    for x in range(maxx): #bredden (x)
+        for y in range(maxy): #højden ( y)
+            if is_pixel_an_obstacle(map, x, y):
+                matrix[y][x] = 1  # Mark as obstacle
 
                 obstacle_neighbor = False
 
                 for neighborx, neighbory in directions:
-                    neighx, neighy = i + neighborx, j + neighbory
+                    neighx, neighy = x + neighborx, y + neighbory
 
                     if 0 <= neighx < maxx and 0 <= neighy < maxy:
-                        if matrix[neighx][neighy] > 0:  # Already labeled as obstacle
+                        if matrix[neighy][neighx] > 0:  
                             obstacle_neighbor = True
-                            region_matrix[i][j] = region_matrix[neighx][neighy]  # Assign same obstacle label
+                            region_matrix[y][x] = region_matrix[neighy][neighx]  # samme obstacle 
                             break
 
                 if not obstacle_neighbor:
-                    region_matrix[i][j] = obstacle_index
+                    region_matrix[y][x] = obstacle_index
                     obstacle_index += 1
                     
-                queue.append((i,j))
+                queue.append((y,x))
     
     while queue:
         current_pixel = queue.pop(0)
-        current_x, current_y = current_pixel
+        current_y, current_x = current_pixel
         #print(current_x, current_y)
         for stepx,stepy in directions: # nei = neighbor x/y
             neix = current_x + stepx
@@ -128,28 +124,28 @@ def brushfire(map, maxx, maxy):
 
             if 0 <= neix < maxx and 0 <= neiy < maxy:
 
-                if matrix[neix][neiy] == 0:
-                    matrix[neix][neiy] = matrix[current_x][current_y] + 1
-                    region_matrix[neix][neiy] = region_matrix[current_x][current_y]
-                    queue.append((neix,neiy))
+                if matrix[neiy][neix] == 0:
+                    matrix[neiy][neix] = matrix[current_y][current_x] + 1
+                    region_matrix[neiy][neix] = region_matrix[current_y][current_x]
+                    queue.append((neiy,neix))
     
     return matrix, region_matrix
 
 def unify_regions(matrix, region_matrix, maxx, maxy):
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Op, ned, højre, venstre
 
-    for i in range(maxx):
-        for j in range(maxy):
-            if matrix[i][j] == 1:  # Dette er en obstacle pixel
-                current_region = region_matrix[i][j]
+    for x in range(maxx):
+        for y in range(maxy):
+            if matrix[y][x] == 1:  # Dette er en obstacle pixel
+                current_region = region_matrix[y][x]
                 
                 # Tjek naboer
-                for neighborx, neighbory in directions:
-                    neighx, neighy = i + neighborx, j + neighbory
+                for neighbory, neighborx in directions:
+                    neighy, neighx = y + neighbory, x + neighborx
                     
-                    if 0 <= neighx < maxx and 0 <= neighy < maxy:
-                        if matrix[neighx][neighy] == 1:  # Hvis naboen også er en obstacle
-                            neighbor_region = region_matrix[neighx][neighy]
+                    if 0 <= neighy < maxy and 0 <= neighx < maxx:
+                        if matrix[neighy][neighx] == 1:  # Hvis naboen også er en obstacle
+                            neighbor_region = region_matrix[neighy][neighx]
                             
                             # Hvis naboen har en anden region, foren regionerne
                             if current_region != neighbor_region:
@@ -158,28 +154,30 @@ def unify_regions(matrix, region_matrix, maxx, maxy):
 
 def merge_regions(region_matrix, region1, region2, maxx, maxy):
     # Gennemløb hele matrixen og ændr alle pixels med region2 til region1
-    for i in range(maxx):
-        for j in range(maxy):
-            if region_matrix[i][j] == region2:
-                region_matrix[i][j] = region1
+    for x in range(maxx):
+        for y in range(maxy):
+            if region_matrix[y][x] == region2:
+                region_matrix[y][x] = region1
 
 # Function to visualize the matrix with colors based on distance
 def visualize_matrix(matrix, maxx, maxy):
-    color_map = np.zeros((maxx, maxy, 3), dtype=np.uint8)
+    color_map = np.zeros((maxy, maxx, 3), dtype=np.uint8)
     
-    for i in range(maxx):
-        for j in range(maxy):
-            if matrix[i][j] == 1: # Obstacles skal være sort
-                color_map[i, j] = (0, 0, 0)  
+    for x in range(maxx):
+        for y in range(maxy):
+            if matrix[y][x] == 1: # Obstacles skal være sort
+                color_map[y, x] = (0, 0, 0)  
             else:
-                distance = min(matrix[i][j]*1.5, 200) 
-                color_map[i, j] = (200 - distance, 200 - distance, 255)  # Hvid til rød efter afstand til obstacle
+                distance = min(matrix[y][x]*1.5, 200) 
+                color_map[y, x] = (200 - distance, 200 - distance, 255)  # Hvid til rød efter afstand til obstacle
     
     # Return the color map image
     return color_map
 
-def visualize_region_matrix(region_matrix, maxx, maxy, voronoi_lines):
-    color_map = np.zeros((maxx, maxy, 3), dtype=np.uint8)
+def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
+    color_map = np.zeros((maxy, maxx, 3), dtype=np.uint8)
+    voronoi_lines = np.zeros((maxy, maxx), dtype=np.uint8)
+    
     farver = [
     # # Pastel:
     # (150, 200, 150),
@@ -208,29 +206,29 @@ def visualize_region_matrix(region_matrix, maxx, maxy, voronoi_lines):
     (75, 83, 32)
 ]
     
-    for i in range(maxx):
-        for j in range(maxy):
-            if matrix[i][j] == 1: # Obstacles skal være sort
-                color_map[i, j] = (0, 0, 0)  
+    for x in range(maxx):
+        for y in range(maxy):
+            if matrix[y][x] == 1: # Obstacles skal være sort
+                color_map[y, x] = (0, 0, 0)  
             else:
-                region = region_matrix[i][j] 
-                color_map[i, j] = farver[region % len(farver)]
+                region = region_matrix[y][x] 
+                color_map[y, x] = farver[region % len(farver)]
 
     directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
 
 
-    for i in range(maxx):
-        for j in range(maxy):
+    for x in range(maxx):
+        for y in range(maxy):
             for stepx,stepy in directions:
-                x, y = i+stepx, j+stepy
-                if 0 <= x < maxx and 0 <= y < maxy and region_matrix[x][y] != region_matrix[i][j]:
-                    color_map[i][j] = (20,20,20)
-                    voronoi_lines[i][j] = 1
+                neiy, neix = y+stepy, x+stepx
+                if 0 <= neiy < maxy and 0 <= neix < maxx and region_matrix[y][x] != region_matrix[neiy][neix]:
+                    color_map[y][x] = (20,20,20)
+                    voronoi_lines[y][x] = 1
 
     # Return the color map image
-    return color_map
+    return color_map, voronoi_lines
 
-def find_near_vor(voronoi_lines, startx, starty, endx, endy, maxx, maxy):
+def find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy):
     vor_x_s = 0
     vor_y_s = 0
     lowest_dist_s = maxx*maxy
@@ -238,135 +236,116 @@ def find_near_vor(voronoi_lines, startx, starty, endx, endy, maxx, maxy):
     vor_y_e = 0
     lowest_dist_e = maxx*maxy    
 
-    for i in range(maxx):
-        for j in range(maxy):
-            if voronoi_lines[i, j, 0] == 1:
-                dist = np.sqrt((j-startx) ** 2 + (i-starty) ** 2)
-                dist_e = np.sqrt((j-endx) ** 2 + (i-endy) ** 2)
+    for x in range(maxx):
+        for y in range(maxy):
+            if int(voronoi_lines[y, x]) == 1:
+                dist = np.sqrt((y-starty) ** 2 + (x-startx) ** 2)
+                dist_e = np.sqrt((y-goaly) ** 2 + (x-goalx) ** 2)
                 if dist < lowest_dist_s:
-                    vor_x_s = j 
-                    vor_y_s = i
+                    vor_y_s = y
+                    vor_x_s = x 
                     lowest_dist_s = dist
                 if dist_e < lowest_dist_e:
-                    vor_x_e = j
-                    vor_y_e = i
+                    vor_y_e = y
+                    vor_x_e = x
                     lowest_dist_e = dist_e
-    #print(vor_x_s, vor_y_s, vor_x_e, vor_y_e) 
-    return vor_x_s, vor_y_s, vor_x_e, vor_y_e
+ 
+    return vor_y_s, vor_x_s, vor_y_e, vor_x_e
                 
-def path_planner(voronoi_lines, startx, starty, endx, endy, maxx, maxy, map):
-    ypath_s, xpath_s, ypath_e, xpath_e = find_near_vor(voronoi_lines, startx, starty, endx, endy, maxx, maxy) # path_s = path start punkt og path_e = path end punkt
+def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
+    path_start_y, path_start_x, path_goal_y, path_goal_x = find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy) # path_s = path start punkt og path_e = path end punkt
     queue = []
     cell_visited = [[None for _ in range(maxx)] for _ in range(maxy)]
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]  # Op, ned, højre, venstre
 
 
-    queue.append((xpath_s, ypath_s))
-    cell_visited[xpath_s][ypath_s] = (xpath_s, ypath_s) # Start forældre
+    queue.append((path_start_y, path_start_x))
+    cell_visited[path_start_y][path_start_x] = (path_start_y, path_start_x) # Start forældre
 
     while queue:
-        current_x, current_y = queue.pop(0)
+        current_y, current_x = queue.pop(0)
 
-        # map[current_x][current_y] = (0, 255, 0)  # Grøn farve på udforskede celler :)
+        if (current_y, current_x) == (path_goal_y, path_goal_x):
+            #print("route found")
+            map1 = visualize_straigth(starty, startx, path_start_y, path_start_x, goaly, goalx, path_goal_y, path_goal_x, map)
+            #print(path_goal_y, path_goal_x)
 
-
-        if (current_x, current_y) == (xpath_e, ypath_e):
-            print("route found")
-            map1 = visualize_straigth(startx, starty, xpath_s, ypath_s, endx, endy, xpath_e, ypath_e, map)
-
-            map_out = visualize_path(cell_visited, xpath_s, ypath_s, xpath_e, ypath_e, map1)
+            map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map1)
             return map_out
        
-        for stepx,stepy in directions: # nei = neighbor x/y
-            neix = current_x + stepx
+        for stepy,stepx in directions: # nei = neighbor x/y
             neiy = current_y + stepy
-            #print(neix, neiy)
+            neix = current_x + stepx
 
-            if 0 <= neix < maxx and 0 <= neiy < maxy:
-                if voronoi_lines[neix, neiy, 0] == 1 and cell_visited[neix][neiy] is None:
-                    queue.append((neix,neiy))
-                    cell_visited[neix][neiy] = (current_x, current_y)
+            if 0 <= neiy < maxy and 0 <= neix < maxx:
+                if voronoi_lines[neiy, neix] == 1 and cell_visited[neiy][neix] is None:
+                    queue.append((neiy,neix))
+                    cell_visited[neiy][neix] = (current_y, current_x)
                     
     print("no path")
     
-    map_out = visualize_path(cell_visited, xpath_s,ypath_s, xpath_e, ypath_e, map)
+    map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map)
     return map_out
 
-def visualize_straigth(startx,starty,xpath_s,ypath_s, endx, endy, xpath_e, ypath_e, map):
-    for x in range(startx, xpath_s + 1):
-        map[starty][x] = (0,0,255)
-    for y in range(starty, ypath_s +1):
-        map[y][startx] = (0,0,255)
+def visualize_straigth(starty,startx,path_start_y, path_start_x, endy, endx, path_goal_y, path_goal_x, map):
+    map = draw_manhattan(map, starty, startx, path_start_y, path_start_x)
+
+    map = draw_manhattan(map, path_goal_y, path_goal_x, endy, endx)
 
     return map
 
+def draw_manhattan(map, y1, x1, y2, x2):
+    if x1 != x2:
+        map[y1, min(x1, x2):max(x1, x2)+1] = (0, 0, 255)    # !!!!!!!! DET HER FORSTÅR JEG IKKE
+    
+    if y1 != y2:
+        map[min(y1, y2):max(y1, y2)+1, x2] = (0, 0, 255)
+    
+    return map
 
-def visualize_path(cell_visited, startx, starty, endx, endy, map):
-    current = (endx, endy)
 
-    if cell_visited[endx][endy] is None:
+def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
+    current = (goaly, goalx)
+
+    if cell_visited[goaly][goalx] is None:
         print("Cannot reconstruct path, no valid path found.")
         return map
 
-    while current != (startx, starty):
+    while current != (starty, startx):
         map[current[0]][current[1]] = (0,0,255)
         current = cell_visited[current[0]][current[1]]
 
     return map
     # Tegn startpunkt også
 
-sizex = 500
-sizey = 500
 
-my_map = make_map(500,500)
+# ----------------------------------------------------
+#map_file = 'prg_ex2_map.png'
+#map_image = read_map(map_file)
+map_image = make_map(600, 500)
+height, width, _ = map_image.shape
 
-
-add_edges(my_map, sizex, sizey)
-
-matrix, region_matrix = brushfire(my_map, sizex, sizey)
-
-#add_edges(matrix, region_matrix, 300, 300)
-unify_regions(matrix, region_matrix, sizex, sizey)
-
-# Visualize the matrix
-visualized_map = visualize_matrix(matrix, sizex, sizey)
-
-voronoi_lines = np.zeros((sizex, sizey, 3), dtype=np.uint8)
-
-
-region_map = visualize_region_matrix(region_matrix, sizex, sizey, voronoi_lines)
-
-#find_near_vor(voronoi_lines, 100, 100, 300, 300,sizex, sizey)
-
-# Resize the image for visualization (increase scale by 2x)
-scale_factor = 1
-resized_brushfire_map = cv2.resize(visualized_map, (visualized_map.shape[1] * scale_factor, visualized_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
-resized_region_map = cv2.resize(region_map, (region_map.shape[1] * scale_factor, region_map.shape[0] * scale_factor), interpolation=cv2.INTER_NEAREST)
-
-
-# Create a named window
-cv2.namedWindow('Brushfire map', cv2.WINDOW_NORMAL)
-# Optionally, resize the window
-cv2.resizeWindow('Brushfire map', 950, 950)  # Or use the dimensions you want
-# Show the resized image
-cv2.imshow('Brushfire map', resized_brushfire_map)
-
-cv2.namedWindow('Region / GVD', cv2.WINDOW_NORMAL)
-cv2.resizeWindow('Region / GVD', 950, 950)  # Or use the dimensions you want
-cv2.imshow('Region / GVD', resized_region_map)
-cv2.waitKey(0)  # Wait until a key is pressed
-
-path_map = path_planner(voronoi_lines, 100, 100, 400, 200, sizex, sizey, region_map)
-cv2.imshow('Path', path_map)
+# -------- Brushfire ---------------------------------
+add_edges(map_image, width, height)
+brushfire_matrix, region_matrix = brushfire(map_image, width, height)
+brushfire_map = visualize_matrix(brushfire_matrix, width, height)
+cv2.imshow('Brushfire Map', brushfire_map)
+cv2.moveWindow('Brushfire Map', 100, 0)
 cv2.waitKey(0)
 
-cv2.destroyAllWindows()
+# -------- GVD ---------------------------------------
+unify_regions(brushfire_matrix, region_matrix, width, height)
+region_map, voronoi_lines = visualize_region_matrix(brushfire_matrix, region_matrix, width, height)
+cv2.imshow('Region Map', region_map)
+cv2.moveWindow('Region Map', 125+width, 0)
+cv2.waitKey(0)
+
+# -------- Path planner ------------------------------
+path_map = path_planner(voronoi_lines, 25, 100, 500, 300, width, height, map_image)
+cv2.imshow('Route Map', path_map)
+cv2.moveWindow('Route Map', 150+2*width, 0)
 
 
-# Mark a pixel on the map
-#new_map = mark_pixel(random_map, x, y)
-#cv2.namedWindow('Marked_Map', cv2.WINDOW_NORMAL)
-#cv2.resizeWindow('Marked_Map', 300, 300) # resize the map window if necessary for marked pixels to be visible
-#cv2.imshow('Marked_Map', new_map)
 cv2.waitKey(0) # wait key is necessary, otherwise the window closes immediately
 cv2.destroyAllWindows()
+
