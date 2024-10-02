@@ -1,5 +1,5 @@
 """
-Det bare lækker kode - Bill Gates
+Det bare lækker kode - Bill Gates formentlig
 """
 import cv2
 # if you have trouble with importing cv2, you might have an outdated version of numpy that does not agree with cv2. try running "pip install --upgrade numpy" in a terminal and then run again.
@@ -64,7 +64,7 @@ def add_edges(map, maxx, maxy):
         map[j][0] = (0,0,0) # Venstre ?
         map[j][maxx-1] = (0,0,0) #Højre ?
 
-    map[0][0] = (255,255,255)       # FJERN HJØRNER
+    map[0][0] = (255,255,255)       # Fjern hjørner for simplere GVD.. ikke fortæl nogen
     map[0][maxx-1] = (255,255,255)
     map[maxy-1][0] = (255,255,255)
     map[maxy-1][maxx-1] = (255,255,255)
@@ -78,12 +78,12 @@ def brushfire(map, maxx, maxy):
     region_matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
 
     obstacle_index = 1
-    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
+    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg... forkert, din spade
 
     for x in range(maxx): #bredden (x)
         for y in range(maxy): #højden ( y)
             if is_pixel_an_obstacle(map, x, y):
-                matrix[y][x] = 1  # Mark as obstacle
+                matrix[y][x] = 1  # Marker som obstacle
 
                 obstacle_neighbor = False
 
@@ -105,7 +105,6 @@ def brushfire(map, maxx, maxy):
     while queue:
         current_pixel = queue.pop(0)
         current_y, current_x = current_pixel
-        #print(current_x, current_y)
         for stepx,stepy in directions: # nei = neighbor x/y
             neix = current_x + stepx
             neiy = current_y + stepy
@@ -184,18 +183,17 @@ def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
     (220, 190, 255),
     (255, 210, 180)
 ]
-    
+    # Obstacles sort og farvelæg alle regionerne
     for x in range(maxx):
         for y in range(maxy):
             if matrix[y][x] == 1: # Obstacles skal være sort
                 color_map[y, x] = (0, 0, 0)  
             else:
-                region = region_matrix[y][x] 
-                color_map[y, x] = farver[region % len(farver)]
+                color_map[y, x] = farver[region_matrix[y][x] % len(farver)]
 
     directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg... Det faktisk højre, venstre, ned, op
 
-
+    # Tegn stregerne op på grænserne mellem regioner samt gem deres koordinater i voronoi_lines
     for x in range(maxx):
         for y in range(maxy):
             for stepx,stepy in directions:
@@ -282,6 +280,7 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
 
 # ----------------- Indlæs / generer map ------------------------------------------------------------------------------
 #map_file = 'prg_ex2_map.png'
+#map_file = 'map_hestesko.png'
 #map_image = read_map(map_file)
 map_image = make_map(600, 500)
 height, width, _ = map_image.shape
@@ -302,7 +301,9 @@ cv2.moveWindow('Region Map', 125+width, 0)
 cv2.waitKey(0)
 
 # ----------------- Find korteste rute og vis den i nyt vindue ------------------------------
-path_map = path_planner(voronoi_lines, 25, 100, 225, 149, width, height, map_image)
+start = (25, 100) # y, x
+goal = (505, 330)
+path_map = path_planner(voronoi_lines, start[0], start[1], goal[0], goal[1], width, height, map_image)
 cv2.imshow('Route Map', path_map)
 cv2.moveWindow('Route Map', 150+2*width, 0)
 
