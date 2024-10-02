@@ -1,9 +1,5 @@
 """
-Building block functions to use for the bug algorithm
-read map from image
-make your own map with randomly generate obstacles
-query whether a pixel is white or black (traversable or obstacle)
-mark the pixel a different colour to show goal, trajectory, etc.
+Det bare lækker kode - Bill Gates
 """
 import cv2
 # if you have trouble with importing cv2, you might have an outdated version of numpy that does not agree with cv2. try running "pip install --upgrade numpy" in a terminal and then run again.
@@ -58,14 +54,7 @@ def place_obstacle_pixel(map, x, y):
     marked_map[x, y] = black  
     return marked_map
 
-# How to use:
-# Read the map
-# map_file = 'prg_ex2_map.png'
-# map_image = read_map(map_file)
-
-# make your own map
-#random_map = make_map(200, 200)
-
+# ----------------- Tilføjer obstacles langs kanten af mappet. Nødvendigt for GVD virker ------------------------------
 def add_edges(map, maxx, maxy):
     for i in range(maxx-1): # bredden
         map[0][i] = (0,0,0) #ØVERST ?
@@ -80,11 +69,10 @@ def add_edges(map, maxx, maxy):
     map[maxy-1][0] = (255,255,255)
     map[maxy-1][maxx-1] = (255,255,255)
     
-
+# ----------------- Brushfire metoden - Gemmer afstand til nærmeste obstacle i "matrix" vha. kø-system ----------------
 def brushfire(map, maxx, maxy):
 
     queue = []
-
     
     matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
     region_matrix = [[0 for _ in range(maxx)] for _ in range(maxy)]
@@ -131,6 +119,7 @@ def brushfire(map, maxx, maxy):
     
     return matrix, region_matrix
 
+# ----------------- Find sammenhængende obstacles og kald metoden til sammekobling ------------------------------------
 def unify_regions(matrix, region_matrix, maxx, maxy):
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Op, ned, højre, venstre
 
@@ -152,6 +141,7 @@ def unify_regions(matrix, region_matrix, maxx, maxy):
                                 # Funktion som går igennem matricen og ændrer region_matrix, så det matcher
                                 merge_regions(region_matrix, current_region, neighbor_region, maxx, maxy)
 
+# ----------------- Koble sammenhængende obstacles til samme region ---------------------------------------------------
 def merge_regions(region_matrix, region1, region2, maxx, maxy):
     # Gennemløb hele matrixen og ændr alle pixels med region2 til region1
     for x in range(maxx):
@@ -159,7 +149,7 @@ def merge_regions(region_matrix, region1, region2, maxx, maxy):
             if region_matrix[y][x] == region2:
                 region_matrix[y][x] = region1
 
-# Function to visualize the matrix with colors based on distance
+# ----------------- Visualiser brushfire matricen. Jo længere fra en obstacle jo mere rød :))  ------------------------
 def visualize_matrix(matrix, maxx, maxy):
     color_map = np.zeros((maxy, maxx, 3), dtype=np.uint8)
     
@@ -171,15 +161,14 @@ def visualize_matrix(matrix, maxx, maxy):
                 distance = min(matrix[y][x]*1.5, 200) 
                 color_map[y, x] = (200 - distance, 200 - distance, 255)  # Hvid til rød efter afstand til obstacle
     
-    # Return the color map image
     return color_map
 
+# ----------------- Visualisere alle regionerne med farver samt grænselinjer (GVD roadmap) ----------------------------
 def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
     color_map = np.zeros((maxy, maxx, 3), dtype=np.uint8)
     voronoi_lines = np.zeros((maxy, maxx), dtype=np.uint8)
     
-    farver = [
-    # # Pastel:
+    farver = [          # Pastel farver
     (150, 200, 150),
     (150, 180, 255),
     (255, 255, 150),
@@ -193,17 +182,7 @@ def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
     (255, 160, 160),
     (180, 255, 200),
     (220, 190, 255),
-    # # Kamo
-    # (107, 142, 35),
-    # (85, 107, 47),
-    # (210, 180, 140),
-    # (244, 164, 96),
-    # (34, 139, 34),
-    # (139, 69, 19),
-    # (240, 230, 140),
-    # (189, 183, 107),
-    # (85, 107, 47),
-    # (75, 83, 32)
+    (255, 210, 180)
 ]
     
     for x in range(maxx):
@@ -214,7 +193,7 @@ def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
                 region = region_matrix[y][x] 
                 color_map[y, x] = farver[region % len(farver)]
 
-    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg
+    directions = [(0,1),(0,-1),(1,0),(-1,0)] # op, ned, højre, venstre.... tror jeg... Det faktisk højre, venstre, ned, op
 
 
     for x in range(maxx):
@@ -222,13 +201,13 @@ def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
             for stepx,stepy in directions:
                 neiy, neix = y+stepy, x+stepx
                 if 0 <= neiy < maxy and 0 <= neix < maxx and region_matrix[y][x] != region_matrix[neiy][neix]:
-                    color_map[y][x] = (20,20,20)
+                    color_map[y][x] = (60,60,60)
                     voronoi_lines[y][x] = 1
 
-    # Return the color map image
     return color_map, voronoi_lines
 
-def find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy):
+# ----------------- Finder den korteste direkte linje fra start/slut punkter til roadmappet ---------------------------
+def find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
     vor_x_s = 0
     vor_y_s = 0
     lowest_dist_s = maxx*maxy
@@ -249,11 +228,12 @@ def find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy):
                     vor_y_e = y
                     vor_x_e = x
                     lowest_dist_e = dist_e
- 
+
     return vor_y_s, vor_x_s, vor_y_e, vor_x_e
                 
+# ----------------- Finder den korteste rute langs roadmappet og kalder visualisering af den --------------------------
 def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
-    path_start_y, path_start_x, path_goal_y, path_goal_x = find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy) # path_s = path start punkt og path_e = path end punkt
+    path_start_y, path_start_x, path_goal_y, path_goal_x = find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map)
     queue = []
     cell_visited = [[None for _ in range(maxx)] for _ in range(maxy)]
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]  # Op, ned, højre, venstre
@@ -266,11 +246,10 @@ def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
         current_y, current_x = queue.pop(0)
 
         if (current_y, current_x) == (path_goal_y, path_goal_x):
-            #print("route found")
-            map1 = visualize_straigth(starty, startx, path_start_y, path_start_x, goaly, goalx, path_goal_y, path_goal_x, map)
-            #print(path_goal_y, path_goal_x)
+            cv2.line(map, (startx,starty),(path_start_x,path_start_y),(0,0,255))
+            cv2.line(map, (goalx,goaly),(path_goal_x,path_goal_y),(0,0,255))
 
-            map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map1)
+            map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map)
             return map_out
        
         for stepy,stepx in directions: # nei = neighbor x/y
@@ -287,25 +266,7 @@ def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
     map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map)
     return map_out
 
-def visualize_straigth(starty,startx,path_start_y, path_start_x, endy, endx, path_goal_y, path_goal_x, map):
-    map = draw_manhattan(map, starty, startx, path_start_y, path_start_x)
-
-    map = draw_manhattan(map, path_goal_y, path_goal_x, endy, endx)
-
-    return map
-
-def draw_manhattan(map, y1, x1, y2, x2):
-    # if x1 != x2:
-    #     map[y1, min(x1, x2):max(x1, x2)+1] = (0, 0, 255)    # Langs y1 til range af x fra min til max
-    
-    # if y1 != y2:
-    #     map[min(y1, y2):max(y1, y2)+1, x2] = (0, 0, 255)
-    cv2.line(map, (x1,y1),(x2,y2),(255,0,0))
-
-
-    return map
-
-
+# ----------------- Tegner faktisk ruten op langs voronoi linjerne ----------------------------------------------------
 def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
     current = (goaly, goalx)
 
@@ -314,20 +275,18 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
         return map
 
     while current != (starty, startx):
-        map[current[0]][current[1]] = (0,0,255)
+        map[current[0]][current[1]] = (255,0,0)
         current = cell_visited[current[0]][current[1]]
 
     return map
-    # Tegn startpunkt også
 
-
-# ----------------------------------------------------
+# ----------------- Indlæs / generer map ------------------------------------------------------------------------------
 #map_file = 'prg_ex2_map.png'
 #map_image = read_map(map_file)
 map_image = make_map(600, 500)
 height, width, _ = map_image.shape
 
-# -------- Brushfire ---------------------------------
+# ----------------- Udfør brushfire algoritemen og vis den i nyt vindue -----------------------------------------------
 add_edges(map_image, width, height)
 brushfire_matrix, region_matrix = brushfire(map_image, width, height)
 brushfire_map = visualize_matrix(brushfire_matrix, width, height)
@@ -335,15 +294,15 @@ cv2.imshow('Brushfire Map', brushfire_map)
 cv2.moveWindow('Brushfire Map', 100, 0)
 cv2.waitKey(0)
 
-# -------- GVD ---------------------------------------
+# ----------------- Generer GVD udfra regioner og vis i nyt vindue ----------------------------------------------------
 unify_regions(brushfire_matrix, region_matrix, width, height)
 region_map, voronoi_lines = visualize_region_matrix(brushfire_matrix, region_matrix, width, height)
-cv2.imshow('Region Map', region_map)
+cv2.imshow('Region Map', region_map) 
 cv2.moveWindow('Region Map', 125+width, 0)
 cv2.waitKey(0)
 
-# -------- Path planner ------------------------------
-path_map = path_planner(voronoi_lines, 25, 100, 500, 300, width, height, map_image)
+# ----------------- Find korteste rute og vis den i nyt vindue ------------------------------
+path_map = path_planner(voronoi_lines, 25, 100, 225, 149, width, height, map_image)
 cv2.imshow('Route Map', path_map)
 cv2.moveWindow('Route Map', 150+2*width, 0)
 
