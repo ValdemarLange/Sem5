@@ -180,30 +180,30 @@ def visualize_region_matrix(matrix, region_matrix, maxx, maxy):
     
     farver = [
     # # Pastel:
-    # (150, 200, 150),
-    # (150, 180, 255),
-    # (255, 255, 150),
-    # (255, 150, 255),
-    # (150, 255, 255),
-    # (255, 180, 200),
-    # (180, 150, 255),
-    # (180, 220, 255),
-    # (255, 200, 150),
-    # (200, 255, 180),
-    # (255, 160, 160),
-    # (180, 255, 200),
-    # (220, 190, 255),
+    (150, 200, 150),
+    (150, 180, 255),
+    (255, 255, 150),
+    (255, 150, 255),
+    (150, 255, 255),
+    (255, 180, 200),
+    (180, 150, 255),
+    (180, 220, 255),
+    (255, 200, 150),
+    (200, 255, 180),
+    (255, 160, 160),
+    (180, 255, 200),
+    (220, 190, 255),
     # # Kamo
-    (107, 142, 35),
-    (85, 107, 47),
-    (210, 180, 140),
-    (244, 164, 96),
-    (34, 139, 34),
-    (139, 69, 19),
-    (240, 230, 140),
-    (189, 183, 107),
-    (85, 107, 47),
-    (75, 83, 32)
+    # (107, 142, 35),
+    # (85, 107, 47),
+    # (210, 180, 140),
+    # (244, 164, 96),
+    # (34, 139, 34),
+    # (139, 69, 19),
+    # (240, 230, 140),
+    # (189, 183, 107),
+    # (85, 107, 47),
+    # (75, 83, 32)
 ]
     
     for x in range(maxx):
@@ -295,12 +295,14 @@ def visualize_straigth(starty,startx,path_start_y, path_start_x, endy, endx, pat
     return map
 
 def draw_manhattan(map, y1, x1, y2, x2):
-    if x1 != x2:
-        map[y1, min(x1, x2):max(x1, x2)+1] = (0, 0, 255)    # !!!!!!!! DET HER FORSTÅR JEG IKKE
+    # if x1 != x2:
+    #     map[y1, min(x1, x2):max(x1, x2)+1] = (0, 0, 255)    # Langs y1 til range af x fra min til max
     
-    if y1 != y2:
-        map[min(y1, y2):max(y1, y2)+1, x2] = (0, 0, 255)
-    
+    # if y1 != y2:
+    #     map[min(y1, y2):max(y1, y2)+1, x2] = (0, 0, 255)
+    cv2.line(map, (x1,y1),(x2,y2),(255,0,0))
+
+
     return map
 
 
@@ -308,7 +310,7 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
     current = (goaly, goalx)
 
     if cell_visited[goaly][goalx] is None:
-        print("Cannot reconstruct path, no valid path found.")
+        print("no path found.")
         return map
 
     while current != (starty, startx):
