@@ -26,10 +26,10 @@ int findWinner(vector<int> votes)
         while (j < N)
         {
             j++;
-            if (votes[i] == votes[j])
+            if (votes[i] == votes[j]) // Tjek om de ens
             {
                 count++;
-                if (count > N / 2)
+                if (count > N / 2) // tjek om flertal er opnået for kandidaten bag stemme [i]
                 {
                     return votes[i];
                 }
@@ -38,7 +38,7 @@ int findWinner(vector<int> votes)
     }
     return -1;
 }
-// O(N²) Selvom anden løkker bliver mindre og mindre. dårlig løsning makker!
+// O(N²) Selvom den indre løkke bliver mindre og mindre. dårlig løsning makker!
 
 int findWinner2(vector<int> votes)
 {

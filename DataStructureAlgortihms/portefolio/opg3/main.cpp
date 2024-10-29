@@ -25,7 +25,6 @@ bool additive(std::string s){
 
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
     std::cout << additive("82842605") << std::endl;
     return 0;
 }

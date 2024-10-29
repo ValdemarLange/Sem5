@@ -1,5 +1,7 @@
 #include "BinarySearchTree.h"
 #include <queue>
+#include <vector>
+#include <cmath>
 using namespace std;
 
 BinarySearchTree::BinarySearchTree() : root{ nullptr }
@@ -254,5 +256,87 @@ void BinarySearchTree::levelorder(BinaryNode *t) const
 		if(curr->left){q.push(curr->left);};
 		if(curr->right){q.push(curr->right);};
 	};
-	return;
+}
+
+int BinarySearchTree::numberOfNodes() const
+{
+	if (isEmpty())
+		return 0;
+	else
+		return numberOfNodes(root);
+}
+
+int BinarySearchTree::numberOfNodes(BinaryNode *t) const
+{
+	if (t != nullptr)
+	{
+		return numberOfNodes(t->left) + numberOfNodes(t->right) +1;
+	}
+	return 0;
+}
+
+int BinarySearchTree::numberOfLeaves() const
+{
+	if (isEmpty())
+		return 0;
+	else
+		return numberOfLeaves(root);
+}
+
+int BinarySearchTree::numberOfLeaves(BinaryNode *t) const
+{
+	if(t == nullptr){
+		return 0;
+	}
+	if ((t->left == nullptr) && (t->right == nullptr))
+	{
+		return 1;
+	}
+	return numberOfLeaves(t->left) + numberOfLeaves(t->right);
+}
+
+
+int BinarySearchTree::numberOfFull() const
+{
+	if (isEmpty())
+		return 0;
+	else
+		return numberOfFull(root);
+}
+
+int BinarySearchTree::numberOfFull(BinaryNode *t) const
+{
+	if(t == nullptr){
+		return 0;
+	}
+	if ((t->left != nullptr) && (t->right != nullptr))
+	{
+		return numberOfFull(t->left) + numberOfFull(t->right) + 1;
+	}
+	return numberOfFull(t->left) + numberOfFull(t->right);
+}
+
+
+int BinarySearchTree::internalPathLength() const
+{
+	if (isEmpty())
+		return 0;
+	else
+		return internalPathLength(root, 0);
+}
+
+int BinarySearchTree::internalPathLength(BinaryNode *t, int N) const
+{
+	if(t == nullptr){
+		return 0;
+	}
+	return internalPathLength(t->left, N+1) + internalPathLength(t->right, N+1) + N;
+}
+
+void BinarySearchTree::createPerfect(vector<int> vec, int h)
+{
+	for (int i = 0; i < pow(2,h+1)-1; i++)
+	{
+		insert(vec[i]);
+	}
 }

@@ -8,9 +8,10 @@ pair<int, int> algoritme(int z)
 {
     int x = 0;
     int y = 0;
-    for (int i = 3; i < cbrt(z); i++) // Giver det højeste tal som i^3 er <= z
+    for (int i = 3; i < cbrt(z); i++) // Giver det højeste tal som i^3 kan antage og stadig være mindre/lig med z
     {
         for (int j = 3; j < log(z)/log(3); j++) // 3^y < z => y*log(3) < log(z) => y < log(z)/log(3)
+                                                // Altså den højeste mulige værdi y
         {
             if(pow(i,j) == z){
                 x = i;

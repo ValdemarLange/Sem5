@@ -13,13 +13,14 @@ using namespace std;
 
 vector<int> nearestSum(vector<int> vec)
 {
+    int size = vec.size();
     int shortest_dist = 1000000000;
     vector<int> best;
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < size; i++)
     {
-        for (int j = 0; j < vec.size(); j++)
+        for (int j = 0; j < size; j++)
         {
-            for (int k = 0; k < vec.size(); k++)
+            for (int k = 0; k < size; k++)
             {
                 if (i == j || i == k || j == k)
                 {

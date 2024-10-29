@@ -2,6 +2,7 @@
 #define BINARY_SEARCH_TREE_H
 #include <iostream>
 #include <algorithm>
+#include <vector>
 using namespace std;
 
 class BinaryNode
@@ -41,6 +42,12 @@ public:
 	void inorder() const;
 	void postorder() const;
 	void levelorder() const;
+	int numberOfNodes() const;
+	int numberOfLeaves() const;
+	int numberOfFull() const;
+	int internalPathLength() const;
+
+	void createPerfect(vector<int> vec, int h);
 
 	
 private:
@@ -62,6 +69,12 @@ private:
 	void inorder(BinaryNode *t) const;
 	void postorder(BinaryNode *t) const;
 	void levelorder(BinaryNode *t) const;
+
+	int numberOfNodes(BinaryNode *t) const;
+	int numberOfLeaves(BinaryNode *t) const;
+	int numberOfFull(BinaryNode *t) const;
+
+	int internalPathLength(BinaryNode *t, int N) const;
 
 
 
