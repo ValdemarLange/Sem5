@@ -4,18 +4,16 @@
 #include <cmath>
 using namespace std;
 
-BinarySearchTree::BinarySearchTree() : root{ nullptr }
+BinarySearchTree::BinarySearchTree() : root{nullptr}
 {
 }
 
-
-BinarySearchTree::BinarySearchTree(const BinarySearchTree & rhs) : root{ nullptr }
+BinarySearchTree::BinarySearchTree(const BinarySearchTree &rhs) : root{nullptr}
 {
 	root = clone(rhs.root);
 }
 
-
-BinarySearchTree::BinarySearchTree(BinarySearchTree && rhs) : root{ rhs.root }
+BinarySearchTree::BinarySearchTree(BinarySearchTree &&rhs) : root{rhs.root}
 {
 	rhs.root = nullptr;
 }
@@ -25,22 +23,21 @@ BinarySearchTree::~BinarySearchTree()
 	makeEmpty();
 }
 
-const int & BinarySearchTree::findMin() const
+const int &BinarySearchTree::findMin() const
 {
 	if (isEmpty())
 		return -1;
 	return findMin(root)->element;
 }
 
-
-const int & BinarySearchTree::findMax() const
+const int &BinarySearchTree::findMax() const
 {
 	if (isEmpty())
 		return -1;
 	return findMax(root)->element;
 }
 
-bool BinarySearchTree::contains(const int & x) const
+bool BinarySearchTree::contains(const int &x) const
 {
 	return contains(x, root);
 }
@@ -63,51 +60,49 @@ void BinarySearchTree::makeEmpty()
 	makeEmpty(root);
 }
 
-
-void BinarySearchTree::insert(const int & x)
+void BinarySearchTree::insert(const int &x)
 {
 	insert(x, root);
 }
 
-void BinarySearchTree::insert(int && x)
+void BinarySearchTree::insert(int &&x)
 {
 	insert(std::move(x), root);
 }
 
-void BinarySearchTree::remove(const int & x)
+void BinarySearchTree::remove(const int &x)
 {
 	remove(x, root);
 }
 
-void BinarySearchTree::insert(const int & x, BinaryNode * & t)
+void BinarySearchTree::insert(const int &x, BinaryNode *&t)
 {
 	if (t == nullptr)
-		t = new BinaryNode{ x, nullptr, nullptr };
+		t = new BinaryNode{x, nullptr, nullptr};
 	else if (x < t->element)
 		insert(x, t->left);
 	else if (t->element < x)
 		insert(x, t->right);
 	else
-		;  // Duplicate; do nothing
+		; // Duplicate; do nothing
 }
 
-
-void BinarySearchTree::insert(int && x, BinaryNode * & t)
+void BinarySearchTree::insert(int &&x, BinaryNode *&t)
 {
 	if (t == nullptr)
-		t = new BinaryNode{ std::move(x), nullptr, nullptr };
+		t = new BinaryNode{std::move(x), nullptr, nullptr};
 	else if (x < t->element)
 		insert(std::move(x), t->left);
 	else if (t->element < x)
 		insert(std::move(x), t->right);
 	else
-		;  // Duplicate; do nothing
+		; // Duplicate; do nothing
 }
 
-void BinarySearchTree::remove(const int & x, BinaryNode * & t)
+void BinarySearchTree::remove(const int &x, BinaryNode *&t)
 {
 	if (t == nullptr)
-		return;   // Item not found; do nothing
+		return; // Item not found; do nothing
 	if (x < t->element)
 		remove(x, t->left);
 	else if (t->element < x)
@@ -125,7 +120,7 @@ void BinarySearchTree::remove(const int & x, BinaryNode * & t)
 	}
 }
 
-BinaryNode * BinarySearchTree::findMin(BinaryNode *t) const
+BinaryNode *BinarySearchTree::findMin(BinaryNode *t) const
 {
 	if (t == nullptr)
 		return nullptr;
@@ -134,7 +129,7 @@ BinaryNode * BinarySearchTree::findMin(BinaryNode *t) const
 	return findMin(t->left);
 }
 
-BinaryNode * BinarySearchTree::findMax(BinaryNode *t) const
+BinaryNode *BinarySearchTree::findMax(BinaryNode *t) const
 {
 	if (t != nullptr)
 		while (t->right != nullptr)
@@ -142,7 +137,7 @@ BinaryNode * BinarySearchTree::findMax(BinaryNode *t) const
 	return t;
 }
 
-bool BinarySearchTree::contains(const int & x, BinaryNode *t) const
+bool BinarySearchTree::contains(const int &x, BinaryNode *t) const
 {
 	if (t == nullptr)
 		return false;
@@ -151,10 +146,10 @@ bool BinarySearchTree::contains(const int & x, BinaryNode *t) const
 	else if (t->element < x)
 		return contains(x, t->right);
 	else
-		return true;    // Match
+		return true; // Match
 }
 
-void BinarySearchTree::makeEmpty(BinaryNode * & t)
+void BinarySearchTree::makeEmpty(BinaryNode *&t)
 {
 	if (t != nullptr)
 	{
@@ -164,7 +159,6 @@ void BinarySearchTree::makeEmpty(BinaryNode * & t)
 	}
 	t = nullptr;
 }
-
 
 void BinarySearchTree::printTree(BinaryNode *t) const
 {
@@ -176,12 +170,12 @@ void BinarySearchTree::printTree(BinaryNode *t) const
 	}
 }
 
-BinaryNode * BinarySearchTree::clone(BinaryNode *t) const
+BinaryNode *BinarySearchTree::clone(BinaryNode *t) const
 {
 	if (t == nullptr)
 		return nullptr;
 	else
-		return new BinaryNode{ t->element, clone(t->left), clone(t->right) };
+		return new BinaryNode{t->element, clone(t->left), clone(t->right)};
 }
 
 void BinarySearchTree::preorder() const
@@ -189,10 +183,10 @@ void BinarySearchTree::preorder() const
 	preorder(root);
 }
 
-
 void BinarySearchTree::preorder(BinaryNode *t) const
 {
-	if (t != nullptr){
+	if (t != nullptr)
+	{
 		cout << t->element << endl;
 		preorder(t->left);
 		preorder(t->right);
@@ -246,15 +240,21 @@ void BinarySearchTree::levelorder() const
 
 void BinarySearchTree::levelorder(BinaryNode *t) const
 {
-	queue<BinaryNode*> q;
+	queue<BinaryNode *> q;
 	q.push(t);
-	while(!q.empty())
+	while (!q.empty())
 	{
-		BinaryNode* curr = q.front();
-		q.pop();	
+		BinaryNode *curr = q.front();
+		q.pop();
 		cout << curr->element << endl;
-		if(curr->left){q.push(curr->left);};
-		if(curr->right){q.push(curr->right);};
+		if (curr->left)
+		{
+			q.push(curr->left);
+		};
+		if (curr->right)
+		{
+			q.push(curr->right);
+		};
 	};
 }
 
@@ -270,7 +270,7 @@ int BinarySearchTree::numberOfNodes(BinaryNode *t) const
 {
 	if (t != nullptr)
 	{
-		return numberOfNodes(t->left) + numberOfNodes(t->right) +1;
+		return numberOfNodes(t->left) + numberOfNodes(t->right) + 1;
 	}
 	return 0;
 }
@@ -285,7 +285,8 @@ int BinarySearchTree::numberOfLeaves() const
 
 int BinarySearchTree::numberOfLeaves(BinaryNode *t) const
 {
-	if(t == nullptr){
+	if (t == nullptr)
+	{
 		return 0;
 	}
 	if ((t->left == nullptr) && (t->right == nullptr))
@@ -294,7 +295,6 @@ int BinarySearchTree::numberOfLeaves(BinaryNode *t) const
 	}
 	return numberOfLeaves(t->left) + numberOfLeaves(t->right);
 }
-
 
 int BinarySearchTree::numberOfFull() const
 {
@@ -306,7 +306,8 @@ int BinarySearchTree::numberOfFull() const
 
 int BinarySearchTree::numberOfFull(BinaryNode *t) const
 {
-	if(t == nullptr){
+	if (t == nullptr)
+	{
 		return 0;
 	}
 	if ((t->left != nullptr) && (t->right != nullptr))
@@ -315,7 +316,6 @@ int BinarySearchTree::numberOfFull(BinaryNode *t) const
 	}
 	return numberOfFull(t->left) + numberOfFull(t->right);
 }
-
 
 int BinarySearchTree::internalPathLength() const
 {
@@ -327,33 +327,61 @@ int BinarySearchTree::internalPathLength() const
 
 int BinarySearchTree::internalPathLength(BinaryNode *t, int N) const
 {
-	if(t == nullptr){
+	if (t == nullptr)
+	{
 		return 0;
 	}
-	return internalPathLength(t->left, N+1) + internalPathLength(t->right, N+1) + N;
+	return internalPathLength(t->left, N + 1) + internalPathLength(t->right, N + 1) + N;
 }
 
 void BinarySearchTree::createPerfect(vector<int> vec, int h)
 {
-	for (int i = 0; i < pow(2,h+1)-1; i++)
+	for (int i = 0; i < pow(2, h + 1) - 1; i++)
 	{
 		insert(vec[i]);
 	}
 }
 
+BinaryNode *BinarySearchTree::getOnlyChild(BinaryNode *node) const
+{
+	if (node->left != nullptr && node->right == nullptr)
+	{
+		return node->left;
+	}
+	if (node->right != nullptr && node->left == nullptr)
+	{
+		return node->right;
+	}
+	return nullptr;
+}
 
 int BinarySearchTree::numberOfBranches() const
 {
 	if (isEmpty())
 		return 0;
 	else
-		return numberOfBranches(root, 0);
+		return numberOfBranches(root->left) + numberOfBranches(root->right);
 }
 
-int BinarySearchTree::numberOfBranches(BinaryNode *t, int N) const
+int BinarySearchTree::numberOfBranches(BinaryNode *t) const
 {
-	if(t == nullptr){
+	if (t == nullptr)
+	{
 		return 0;
 	}
-	return numberOfBranches(t->left, N+1) + numberOfBranches(t->right, N+1) + N;
+	BinaryNode *child = getOnlyChild(t);
+
+	if (child == nullptr)
+	{
+		return numberOfBranches(t->left) + numberOfBranches(t->right);
+	}
+
+	BinaryNode *grandchild = getOnlyChild(child);
+
+	if (grandchild != nullptr && grandchild->left == nullptr && grandchild->right == nullptr) //Er barnebarnet enebarn og er det et blad
+	{
+		return 1;
+	}
+	
+	return numberOfBranches(t->left) + numberOfBranches(t->right);
 }
