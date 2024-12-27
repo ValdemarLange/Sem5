@@ -341,19 +341,3 @@ void BinarySearchTree::createPerfect(vector<int> vec, int h)
 	}
 }
 
-
-int BinarySearchTree::numberOfBranches() const
-{
-	if (isEmpty())
-		return 0;
-	else
-		return numberOfBranches(root, 0);
-}
-
-int BinarySearchTree::numberOfBranches(BinaryNode *t, int N) const
-{
-	if(t == nullptr){
-		return 0;
-	}
-	return numberOfBranches(t->left, N+1) + numberOfBranches(t->right, N+1) + N;
-}

@@ -48,12 +48,17 @@ int main()
     abe.insert(45);
     abe.insert(50);
 
+    std::cout << "---------------" << abe.internalPathLength() << std::endl;
 
     abe.postorder();
     std::cout << "-----" << std::endl;
     abe.preorder();
     std::cout << "-----" << std::endl;
 
-    std::cout << abe.internalPathLength();
+    std::cout << abe.internalPathLength() << std::endl;
+
+    std::cout << tree.internalPathLength() << std::endl;
+    
+
     return 0;
 }
