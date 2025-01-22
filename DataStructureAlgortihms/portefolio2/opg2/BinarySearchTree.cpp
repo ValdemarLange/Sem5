@@ -385,3 +385,46 @@ int BinarySearchTree::numberOfBranches(BinaryNode *t) const
 	
 	return numberOfBranches(t->left) + numberOfBranches(t->right);
 }
+
+std::string BinarySearchTree::findRoute(int value) const{
+	if (!contains(value))
+		return "Value not found";
+	else
+		return findRoute(root, value);
+}
+
+// std::string BinarySearchTree::findRoute(BinaryNode *root, int value) const{
+	
+// 	if ( root->element == value){
+// 		std::cout << value << std::endl;
+// 	}
+
+// 	if ( root->element > value){
+// 		std::cout << root->element << " ";
+// 		findRoute(root->left, value);
+// 	}
+
+// 	if ( root->element < value){
+// 		std::cout << root->element << " ";
+// 		findRoute(root->right, value);
+// 	}
+
+// 	return "";
+// }
+
+std::string BinarySearchTree::findRoute(BinaryNode *root, int value) const{
+	
+	if ( root->element == value){
+		return to_string(root->element);
+	}
+
+	if ( root->element > value){
+		return to_string(root->element) + " " + findRoute(root->left, value);
+	}
+
+	if ( root->element < value){
+		return to_string(root->element) + " " + findRoute(root->right, value);
+	}
+
+	return "";
+}

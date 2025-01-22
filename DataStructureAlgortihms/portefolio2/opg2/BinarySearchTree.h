@@ -51,6 +51,8 @@ public:
 
 	int numberOfBranches() const;
 
+	std::string findRoute(int value) const;
+
 	
 private:
 	BinaryNode *root;
@@ -81,7 +83,7 @@ private:
 	int numberOfBranches(BinaryNode *t) const;
 	BinaryNode* getOnlyChild(BinaryNode *node) const;
 
-
+	std::string findRoute(BinaryNode *root, int value) const;
 	
 };
 
