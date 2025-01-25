@@ -118,6 +118,7 @@ def brushfire(map, maxx, maxy):
     
     return matrix, region_matrix
 
+
 # ----------------- Find sammenhængende obstacles og kald metoden til sammekobling ------------------------------------
 def unify_regions(matrix, region_matrix, maxx, maxy):
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Op, ned, højre, venstre
@@ -140,13 +141,14 @@ def unify_regions(matrix, region_matrix, maxx, maxy):
                                 # Funktion som går igennem matricen og ændrer region_matrix, så det matcher
                                 merge_regions(region_matrix, current_region, neighbor_region, maxx, maxy)
 
-# ----------------- Koble sammenhængende obstacles til samme region ---------------------------------------------------
+# # ----------------- Koble sammenhængende obstacles til samme region ---------------------------------------------------
 def merge_regions(region_matrix, region1, region2, maxx, maxy):
     # Gennemløb hele matrixen og ændr alle pixels med region2 til region1
     for x in range(maxx):
         for y in range(maxy):
             if region_matrix[y][x] == region2:
                 region_matrix[y][x] = region1
+
 
 # ----------------- Visualiser brushfire matricen. Jo længere fra en obstacle jo mere rød :))  ------------------------
 def visualize_matrix(matrix, maxx, maxy):
@@ -227,8 +229,92 @@ def find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
                     vor_x_e = x
                     lowest_dist_e = dist_e
 
-    return vor_y_s, vor_x_s, vor_y_e, vor_x_e
+    return vor_y_s, vor_x_s, vor_y_e, vor_x_e 
+
+
+def connect_concave_corners(region_matrix, voronoi_lines, maxx, maxy):
+    """
+    Forbinder hjørner i konkave obstacles til GVD, men kun hvis linjen er fri for obstacles.
+    """
+    def is_line_clear(x1, y1, x2, y2):
+        """
+        Tjekker om linjen mellem (x1, y1) og (x2, y2) krydser obstacles.
+        """
+        # Bresenham's line algorithm
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+
+        while True:
+            if np.array_equal(region_matrix[y1][x1], (0, 0, 0)):  # Obstacle pixel
+                return False
+            if (x1, y1) == (x2, y2):  # Reached destination
+                break
+            e2 = err * 2
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+
+        return True
+
+    directions = [
+        (0, 1), (0, -1), (1, 0), (-1, 0),  # Op, ned, højre, venstre
+        (1, 1), (-1, -1), (1, -1), (-1, 1)  # Diagonaler
+    ]
+    connected_points = []
+
+    for x in range(1, maxx - 1):  # Undgå kanten
+        for y in range(1, maxy - 1):  # Undgå kanten
+            if not is_pixel_an_obstacle(region_matrix, x, y):
+                is_corner = False
+                obstacle_neighbors = 0
+                diagonal_neighbors = 0
                 
+                for dx, dy in directions:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < maxx and 0 <= ny < maxy:
+                        if np.array_equal(region_matrix[ny][nx], (0, 0, 0)):  # Del af obstacle
+                            if abs(dx) + abs(dy) == 1:  # Kun lodret/vandret nabo
+                                obstacle_neighbors += 1
+                            else:  # Diagonal nabo
+                                diagonal_neighbors += 1
+
+                # Hjørne detekteres kun hvis der er præcis 2 lodrette/vandrette naboer
+                # og ikke flere end 1 diagonal nabo (for at undgå skæve linjer)
+                if obstacle_neighbors == 2 and diagonal_neighbors > 1:
+                    is_corner = True
+
+                if is_corner:
+                    connected_points.append((x, y))
+
+    # Forbind hjørner til Voronoi-linjer
+    for cx, cy in reversed(connected_points):
+        closest_vor = None
+        min_dist = float('inf')
+        for vx in range(maxx):
+            for vy in range(maxy):
+                if voronoi_lines[vy][vx] == 1:
+                    dist = np.sqrt((cx - vx)**2 + (cy - vy)**2)
+                    if dist < min_dist:
+                        # Check if the line is clear before updating closest_vor
+                        if is_line_clear(cx, cy, vx, vy):
+                            min_dist = dist
+                            closest_vor = (vx, vy)
+        if closest_vor:
+            if min_dist > 5:
+                cv2.line(region_matrix, (closest_vor[0], closest_vor[1]), (cx, cy), (0,0,255), 1)  # Forbind til nærmeste linje
+                cv2.line(voronoi_lines, (closest_vor[0], closest_vor[1]), (cx, cy), 1, 1)
+                print(f"Connected corner ({cx}, {cy}) to Voronoi line at {closest_vor}")
+
+
+
+
+
 # ----------------- Finder den korteste rute langs roadmappet og kalder visualisering af den --------------------------
 def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
     path_start_y, path_start_x, path_goal_y, path_goal_x = find_near_vor(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map)
@@ -280,14 +366,20 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
 
 # ----------------- Indlæs / generer map ------------------------------------------------------------------------------
 #map_file = 'prg_ex2_map.png'
-#map_file = 'map_hestesko.png'
-#map_image = read_map(map_file)
-map_image = make_map(600, 500)
+# map_file = 'map_hestesko.png'
+# map_file = 'map_spiral.png'
+map_file = 'map_stop_nu_ven.png'
+
+
+map_image = read_map(map_file)
+# map_image = make_map(600, 500)
 height, width, _ = map_image.shape
 
 # ----------------- Udfør brushfire algoritemen og vis den i nyt vindue -----------------------------------------------
 add_edges(map_image, width, height)
+
 brushfire_matrix, region_matrix = brushfire(map_image, width, height)
+
 brushfire_map = visualize_matrix(brushfire_matrix, width, height)
 cv2.imshow('Brushfire Map', brushfire_map)
 cv2.moveWindow('Brushfire Map', 100, 0)
@@ -296,12 +388,15 @@ cv2.waitKey(0)
 # ----------------- Generer GVD udfra regioner og vis i nyt vindue ----------------------------------------------------
 unify_regions(brushfire_matrix, region_matrix, width, height)
 region_map, voronoi_lines = visualize_region_matrix(brushfire_matrix, region_matrix, width, height)
+
+# connect_concave_corners(region_map, voronoi_lines, width, height)
+
 cv2.imshow('Region Map', region_map) 
 cv2.moveWindow('Region Map', 125+width, 0)
 cv2.waitKey(0)
 
 # ----------------- Find korteste rute og vis den i nyt vindue ------------------------------
-start = (25, 100) # y, x
+start = (30, 220) # y, x
 goal = (505, 330)
 path_map = path_planner(voronoi_lines, start[0], start[1], goal[0], goal[1], width, height, map_image)
 cv2.imshow('Route Map', path_map)
