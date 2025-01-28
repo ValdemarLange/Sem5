@@ -149,11 +149,8 @@ def visualize_brushfire(brushfire_matrix, maxx, maxy):
     return brushfire_map
 
 
-# ---------------- Finder lokale maxima ud fra brusfire matricen --------------------------------------------------------
+# ---------------- Finder lokale maxima ud fra brushfire matricen --------------------------------------------------------
 def find_local_maxima(brushfire_matrix, maxx, maxy):
-    """
-    Finder lokale maksima i brushfire-matrixen med et strengere kriterium.
-    """
     voronoi_lines = np.zeros((maxy, maxx), dtype=np.uint8)
 
     for x in range(1, maxx - 1):  # Undgå kanterne
@@ -179,9 +176,6 @@ def find_local_maxima(brushfire_matrix, maxx, maxy):
 
 # --------------- Tegner voronoi linjer ud fra regioner og tilføjer voronoi linjer fra lokale maxima, som røde linjer ----
 def draw_color_map(brushfire_matrix, voronoi_lines, region_matrix, maxx, maxy):
-    """
-    Laver map med voronoi linjer fra region grænser med grå og tilføjer ekstra voronoi linjer fra lokale maxima med rød
-    """
     farver = [          # Pastel farver til regioner
     (150, 200, 150),
     (150, 180, 255),
@@ -329,7 +323,7 @@ def connect_structures(color_map, structures, voronoi_lines, maxx, maxy):
             if np.array_equal(color_map[y, x], (0,255,0)) or np.array_equal(color_map[y, x], (0, 0, 255)) or np.array_equal(color_map[y, x], (255, 0, 0)):
                 color_map[y, x] = (60, 60, 60)
 
-# ----------------- returnere et map, hvor voronoi_lines er tegnet op med rød ---------------------------------------
+# ----------------- returnere et map, hvor voronoi_lines er tegnet op med rød -------------------------------------------------------
 def visualize_voronoi(voronoi_lines, maxx, maxy):
     map = np.zeros((maxy, maxx, 3), dtype=np.uint8)
     
@@ -357,6 +351,11 @@ def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
         current_y, current_x = queue.pop(0)
 
         if (current_y, current_x) == (path_goal_y, path_goal_x):    # Hvis fundet gyldig path => tegn streger til start/goal + ruten langs roadmap
+            # for y in range(maxy):         # Til at se hvad der er udforsket
+            #     for x in range(maxx):
+            #         if cell_visited[y][x] is not None:
+            #             map[y, x] = (0, 255, 0)  # Grøn farve
+
             cv2.line(map, (startx,starty),(path_start_x,path_start_y),(0,0,255))
             cv2.line(map, (goalx,goaly),(path_goal_x,path_goal_y),(0,0,255))
 
@@ -371,11 +370,7 @@ def path_planner(voronoi_lines, starty, startx, goaly, goalx, maxx, maxy, map):
                 if voronoi_lines[neiy, neix] == 1 and cell_visited[neiy][neix] is None:
                     queue.append((neiy,neix))
                     cell_visited[neiy][neix] = (current_y, current_x)
-                    
-    print("no path")
-    
-    map_out = visualize_path(cell_visited, path_start_y, path_start_x, path_goal_y, path_goal_x, map)
-    return map_out
+    return map
 
 # ----------------- Tegner faktisk ruten op langs voronoi linjerne ----------------------------------------------------
 def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
@@ -396,8 +391,10 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
 # map_file = 'map_hestesko.png'
 # map_file = 'map_spiral.png'
 # map_file = 'map_spiral_cut.png'
+# map_file = 'map_spiral_broke.png'
 # map_file = 'map_helt_crazy.png'
 map_file = 'map_stop_nu_ven.png'
+# map_file = 'map_stop_nu_ven2.png' ## Virker ikke :)
 
 
 map_image = read_map(map_file)
@@ -420,6 +417,13 @@ cv2.waitKey(0)
 # ----------------- Generer GVD udfra regioner og brushfire structures ----------------------------------------------------
 voronoi_lines = find_local_maxima(brushfire_matrix, width, height)
 
+roadmap = visualize_voronoi(voronoi_lines, width, height)
+
+# Show map before connections
+cv2.imshow("Voronoi lines", roadmap)
+cv2.moveWindow('Voronoi lines', 125+width, 140+height)
+cv2.waitKey(0)
+
 color_map = draw_color_map(brushfire_matrix, voronoi_lines, region_matrix, width, height)
 
 structures = find_edge_red(color_map, width, height)
@@ -431,12 +435,12 @@ cv2.moveWindow('Voronoi Diagram', 125+width, 0)
 # ----------------- Åben et vindue med kun roadmap --------------------------------------------------------------------
 roadmap = visualize_voronoi(voronoi_lines, width, height)
 cv2.imshow("Voronoi lines", roadmap)
-cv2.moveWindow('Voronoi lines', 125+width, 125+height)
+cv2.moveWindow('Voronoi lines', 125+width, 140+height)
 cv2.waitKey(0)
 
 # ----------------- Find korteste rute og vis den i nyt vindue ------------------------------
-start = (30, 320) # y, x
-goal = (140, 180)
+start = (15, 320) # y, x
+goal = (140, 174)
 path_map = path_planner(voronoi_lines, start[0], start[1], goal[0], goal[1], width, height, map_image)
 cv2.imshow('Route Map', path_map)
 cv2.moveWindow('Route Map', 150+2*width, 0)

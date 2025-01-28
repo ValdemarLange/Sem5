@@ -365,10 +365,10 @@ def visualize_path(cell_visited, starty, startx, goaly, goalx, map):
     return map
 
 # ----------------- Indlæs / generer map ------------------------------------------------------------------------------
-#map_file = 'prg_ex2_map.png'
+# map_file = 'prg_ex2_map.png'
 # map_file = 'map_hestesko.png'
-# map_file = 'map_spiral.png'
-map_file = 'map_stop_nu_ven.png'
+map_file = 'map_spiral.png'
+# map_file = 'map_stop_nu_ven.png'
 
 
 map_image = read_map(map_file)
